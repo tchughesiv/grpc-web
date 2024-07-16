@@ -105,3 +105,28 @@ services:
       context: ./
       dockerfile: ./packages/grpc-web/docker/jsunit-test/Dockerfile
     image: grpcweb/jsunit-test
+  feast-envoy:
+    build:
+      context: ./
+      dockerfile: ./net/grpc/gateway/docker/feast_envoy/Dockerfile
+    image: grpcweb/envoy
+    ports:
+      - "8080:8080"
+      - "8082:8082"
+      - "9901:9901"
+    links:
+      - feature-registry
+  feastjs-client:
+    build:
+      context: ./
+      dockerfile: ./net/grpc/gateway/docker/feastjs_client/Dockerfile
+    image: grpcweb/feastjs-client
+    ports:
+      - "8081:8081"
+  feature-registry:
+    command: feast serve_registry
+    environment:
+      FEATURE_STORE_YAML_BASE64: "cHJvamVjdDogbXlfcHJvamVjdAojIEJ5IGRlZmF1bHQsIHRoZSByZWdpc3RyeSBpcyBhIGZpbGUgKGJ1dCBjYW4gYmUgdHVybmVkIGludG8gYSBtb3JlIHNjYWxhYmxlIFNRTC1iYWNrZWQgcmVnaXN0cnkpCnJlZ2lzdHJ5OiBkYXRhL3JlZ2lzdHJ5LmRiCiMgVGhlIHByb3ZpZGVyIHByaW1hcmlseSBzcGVjaWZpZXMgZGVmYXVsdCBvZmZsaW5lIC8gb25saW5lIHN0b3JlcyAmIHN0b3JpbmcgdGhlIHJlZ2lzdHJ5IGluIGEgZ2l2ZW4gY2xvdWQKcHJvdmlkZXI6IGxvY2FsCm9ubGluZV9zdG9yZToKICAgIHR5cGU6IHNxbGl0ZQogICAgcGF0aDogZGF0YS9vbmxpbmVfc3RvcmUuZGIKZW50aXR5X2tleV9zZXJpYWxpemF0aW9uX3ZlcnNpb246IDIK"
+    ports:
+      - "6570:6570"
+    image: quay.io/tchughesiv/feature-server:0.39.0

@@ -31,7 +31,7 @@ WORKDIR /tmp
 RUN curl -sSL https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VERSION/\
 protoc-$PROTOBUF_VERSION-linux-x86_64.zip -o protoc.zip && \
   unzip -qq protoc.zip && \
-  cp ./bin/protoc /usr/local/bin/protoc
+  cp ./bin/protoc /usr/local/bin/protoc && cp -r ./include/google /usr/local/include/
 
 RUN wget -nv -O buildifier \
   https://github.com/bazelbuild/buildtools/releases/download/$BUILDIFIER_VERSION/buildifier && \
@@ -60,6 +60,7 @@ RUN mkdir -p /var/www/html/dist
 RUN echo "\nloglevel=error\n" >> $HOME/.npmrc
 
 COPY --from=prepare /usr/local/bin/protoc /usr/local/bin/
+COPY --from=prepare /usr/local/include/google /usr/local/include/google
 COPY --from=prepare /usr/local/bin/buildifier /usr/local/bin/
 COPY --from=prepare /github/grpc-web/third_party /github/grpc-web/third_party
 

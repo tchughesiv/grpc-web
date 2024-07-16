@@ -16,7 +16,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Echo Example</title>
+<title>FEAST Example</title>
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 <script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script>
@@ -24,20 +24,28 @@
   const script = document.createElement('script');
   script.src = `./dist/main.js?v=${Date.now()}`;
   document.head.appendChild(script);
+
+  const addCSS = css => document.head.appendChild(document.createElement("style")).innerHTML=css;
+  addCSS(".button-box button { margin-right:10px; }")
 </script>
 </head>
 <body>
   <div class="container">
     <div class="row" id="first">
       <div class="form-group">
-        <div class="input-group">
-          <input type="text" class="form-control" id="msg">
-          <span class="input-group-btn">
-            <button class="btn btn-primary" type="button" id="send">Send
-            </button>
-          </span>
+        <p class="help-block">Filter by tag - <i>optional</i></p>
+        <p class="help-block">key-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;value-</p>
+        <input name="tagKey" id="key" placeholder="team">
+        <label>:</label>
+        <input name="tagValue" id="value" placeholder="driver_performance">
         </div>
-        <p class="help-block">Example: "Hello", "4 Hello", "err Hello"</p>
+        <p class="help-block">Feast project set to 'remote_feast_registry'</p>
+        <div class="button-box" id="buttons">
+          <button class="btn btn-primary" type="button" id="send1">List Entities</button>
+          <button class="btn btn-primary" type="button" id="send2">List Feature Views</button>
+          <button class="btn btn-primary" type="button" id="send3">List On Demand Feature Views</button>
+          <button class="btn btn-primary" type="button" id="send4">List Feature Services</button>
+        </div>
       </div>
     </div>
   </div>

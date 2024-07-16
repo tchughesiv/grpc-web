@@ -41,6 +41,28 @@ static_resources:
                 - name: envoy.filters.http.grpc_web
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb
+                - name: envoy.filters.http.grpc_http1_reverse_bridge
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_http1_reverse_bridge.v3.FilterConfig
+                    content_type: application/grpc-web-text
+                    withhold_grpc_frames: true
+                - name: envoy.filters.http.lua
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                    inline_code: |
+                      function envoy_on_request(request_handle)
+                        request_handle:headers():add("te", "trailers")
+                      end
+                - name: envoy.filters.http.lua
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                    inline_code: |
+                      function envoy_on_response(response_handle)
+                        if (response_handle:headers())
+                        then
+                          response_handle:headers():replace("content-type", "application/grpc-web-text+proto")
+                        end
+                      end
                 - name: envoy.filters.http.router
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

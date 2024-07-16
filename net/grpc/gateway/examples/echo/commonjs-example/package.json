@@ -4,6 +4,7 @@
   "description": "gRPC-Web CommonJS client example",
   "license": "Apache-2.0",
   "dependencies": {
+    "commonjs": "^0.0.1",
     "google-protobuf": "~3.14.0",
     "grpc-web": "~1.5.0"
   },

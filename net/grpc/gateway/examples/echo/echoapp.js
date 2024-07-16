@@ -16,62 +16,78 @@
  *
  */
 
-const echoapp = {};
+const feastapp = {};
+const project = "remote_feast_registry"
 
 /**
- * @param {Object} echoService
+ * @param {Object} feastService
+ * @param {Map} tags
  * @param {Object} ctors
  */
-echoapp.EchoApp = function(echoService, ctors) {
-  this.echoService = echoService;
+feastapp.FeastApp = function(feastService, tags, ctors) {
+  this.feastService = feastService;
+  this.tags = tags
   this.ctors = ctors;
 };
 
-echoapp.EchoApp.INTERVAL = 500; // ms
-echoapp.EchoApp.MAX_STREAM_MESSAGES = 50;
+feastapp.FeastApp.INTERVAL = 1000; // ms
 
 /**
  * @param {string} message
  * @param {string} cssClass
  */
-echoapp.EchoApp.addMessage = function(message, cssClass) {
+feastapp.FeastApp.addMessage = function(message, cssClass) {
   $("#first").after(
     $("<div/>").addClass("row").append(
-      $("<h2/>").append(
+      $("<h3/>").append(
         $("<span/>").addClass("label " + cssClass).text(message))));
 };
 
 /**
  * @param {string} message
  */
-echoapp.EchoApp.addLeftMessage = function(message) {
+feastapp.FeastApp.addLeftMessage = function(message) {
   this.addMessage(message, "label-primary pull-left");
 };
 
 /**
  * @param {string} message
  */
-echoapp.EchoApp.addRightMessage = function(message) {
+feastapp.FeastApp.addRightMessage = function(message) {
   this.addMessage(message, "label-default pull-right");
 };
 
 /**
- * @param {string} msg
+ * @param {{}[]} objList
  */
-echoapp.EchoApp.prototype.echo = function(msg) {
-  echoapp.EchoApp.addLeftMessage(msg);
-  var unaryRequest = new this.ctors.EchoRequest();
-  unaryRequest.setMessage(msg);
-  var call = this.echoService.echo(unaryRequest,
-                                   {"custom-header-1": "value1"},
-                                   function(err, response) {
+feastapp.FeastApp.getObjectNames = function(objList) {
+  var objNames = [""];
+  objNames = [];
+  for (var obj of objList) {
+    objNames.push(obj.getSpec().getName())
+    //var featureViewMeta = featureView.getMeta()
+  }
+  return objNames.sort()
+};
+
+feastapp.FeastApp.prototype.listEntities = function() {
+  var request = new this.ctors.ListEntitiesRequest();
+  request.setProject(project);
+  if (this.tags) {
+    for (let [key, value] of this.tags) {
+      request.getTagsMap().set(key, value);
+    };
+  };
+  var call = this.feastService.listEntities(request, {}, function(err, response) {
     if (err) {
-      echoapp.EchoApp.addRightMessage('Error code: '+err.code+' "'+
-                                      err.message+'"');
+      feastapp.FeastApp.addLeftMessage('Error code: '+err.code+' "'+err.message+'"');
     } else {
       setTimeout(function () {
-        echoapp.EchoApp.addRightMessage(response.getMessage());
-      }, echoapp.EchoApp.INTERVAL);
+        var objNames = feastapp.FeastApp.getObjectNames(response.getEntitiesList())
+        const dIndex = objNames.indexOf('__dummy');
+        objNames.splice(dIndex, 1);
+        feastapp.FeastApp.addLeftMessage(objNames.length + ' - ' + objNames.join(' , '));
+      }, feastapp.FeastApp.INTERVAL);
     }
   });
   call.on('status', function(status) {
@@ -82,96 +98,136 @@ echoapp.EchoApp.prototype.echo = function(msg) {
   });
 };
 
-/**
- * @param {string} msg
- */
-echoapp.EchoApp.prototype.echoError = function(msg) {
-  echoapp.EchoApp.addLeftMessage(`Error: ${msg}`);
-  var unaryRequest = new this.ctors.EchoRequest();
-  unaryRequest.setMessage(msg);
-  this.echoService.echoAbort(unaryRequest, {}, function(err, response) {
+feastapp.FeastApp.prototype.listFV = function() {
+  var request = new this.ctors.ListFeatureViewsRequest();
+  request.setProject(project);
+  if (this.tags) {
+    for (let [key, value] of this.tags) {
+      request.getTagsMap().set(key, value);
+    };
+  };
+  var call = this.feastService.listFeatureViews(request, {}, function(err, response) {
     if (err) {
-      echoapp.EchoApp.addRightMessage('Error code: '+err.code+' "'+
-                                      err.message+'"');
+      feastapp.FeastApp.addLeftMessage('Error code: '+err.code+' "'+err.message+'"');
+      console.log(response);
+    } else {
+      setTimeout(function () {
+        var objNames = feastapp.FeastApp.getObjectNames(response.getFeatureViewsList())
+        feastapp.FeastApp.addLeftMessage(objNames.length + ' - ' + objNames.join(' , '));
+      }, feastapp.FeastApp.INTERVAL);
     }
   });
-};
-
-/**
- * @param {string} msg
- * @param {number} count
- */
-echoapp.EchoApp.prototype.repeatEcho = function(msg, count) {
-  echoapp.EchoApp.addLeftMessage(msg);
-  if (count > echoapp.EchoApp.MAX_STREAM_MESSAGES) {
-    count = echoapp.EchoApp.MAX_STREAM_MESSAGES;
-  }
-  var streamRequest = new this.ctors.ServerStreamingEchoRequest();
-  streamRequest.setMessage(msg);
-  streamRequest.setMessageCount(count);
-  streamRequest.setMessageInterval(echoapp.EchoApp.INTERVAL);
-
-  var stream = this.echoService.serverStreamingEcho(
-    streamRequest,
-    {"custom-header-1": "value1"});
-  stream.on('data', function(response) {
-    echoapp.EchoApp.addRightMessage(response.getMessage());
-  });
-  stream.on('status', function(status) {
+  call.on('status', function(status) {
     if (status.metadata) {
       console.log("Received metadata");
       console.log(status.metadata);
     }
   });
-  stream.on('error', function(err) {
-    echoapp.EchoApp.addRightMessage('Error code: '+err.code+' "'+
-                                    err.message+'"');
+};
+
+feastapp.FeastApp.prototype.listODFV = function() {
+  var request = new this.ctors.ListOnDemandFeatureViewsRequest();
+  request.setProject(project);
+  if (this.tags) {
+    for (let [key, value] of this.tags) {
+      request.getTagsMap().set(key, value);
+    };
+  };
+  var call = this.feastService.listOnDemandFeatureViews(request, {}, function(err, response) {
+    if (err) {
+      feastapp.FeastApp.addLeftMessage('Error code: '+err.code+' "'+err.message+'"');
+    } else {
+      setTimeout(function () {
+        var objNames = feastapp.FeastApp.getObjectNames(response.getOnDemandFeatureViewsList())
+        feastapp.FeastApp.addLeftMessage(objNames.length + ' - ' + objNames.join(' , '));
+      }, feastapp.FeastApp.INTERVAL);
+    }
   });
-  stream.on('end', function() {
-    console.log("stream end signal received");
+  call.on('status', function(status) {
+    if (status.metadata) {
+      console.log("Received metadata");
+      console.log(status.metadata);
+    }
   });
 };
 
-/**
- * @param {Object} e event
- * @return {boolean} status
- */
-echoapp.EchoApp.prototype.send = function(e) {
-  var msg = $("#msg").val().trim();
-  $("#msg").val(''); // clear the text box
-  if (!msg) return false;
-
-  if (msg.indexOf(' ') > 0) {
-    var count = msg.substr(0, msg.indexOf(' '));
-    if (/^\d+$/.test(count)) {
-      this.repeatEcho(msg.substr(msg.indexOf(' ') + 1), count);
-    } else if (count == 'err') {
-      this.echoError(msg.substr(msg.indexOf(' ') + 1));
+feastapp.FeastApp.prototype.listFS = function() {
+  var request = new this.ctors.ListFeatureServicesRequest();
+  request.setProject(project);
+  if (this.tags) {
+    for (let [key, value] of this.tags) {
+      request.getTagsMap().set(key, value);
+    };
+  };
+  var call = this.feastService.listFeatureServices(request, {}, function(err, response) {
+    if (err) {
+      feastapp.FeastApp.addLeftMessage('Error code: '+err.code+' "'+err.message+'"');
     } else {
-      this.echo(msg);
+      setTimeout(function () {
+        var objNames = feastapp.FeastApp.getObjectNames(response.getFeatureServicesList())
+        feastapp.FeastApp.addLeftMessage(objNames.length + ' - ' + objNames.join(' , '));
+      }, feastapp.FeastApp.INTERVAL);
     }
-  } else {
-    this.echo(msg);
-  }
+  });
+  call.on('status', function(status) {
+    if (status.metadata) {
+      console.log("Received metadata");
+      console.log(status.metadata);
+    }
+  });
+};
 
-  return false;
+feastapp.FeastApp.prototype.send1 = function() {
+  changeTags(this);
+  feastapp.FeastApp.addRightMessage("List Entities");
+  this.listEntities();
+};
+
+feastapp.FeastApp.prototype.send2 = function() {
+  changeTags(this);
+  feastapp.FeastApp.addRightMessage("List Feature Views");
+  this.listFV();
+};
+
+feastapp.FeastApp.prototype.send3 = function() {
+  changeTags(this);
+  feastapp.FeastApp.addRightMessage("List On Demand Feature Views");
+  this.listODFV();
+};
+
+feastapp.FeastApp.prototype.send4 = function() {
+  changeTags(this);
+  feastapp.FeastApp.addRightMessage("List Feature Services");
+  this.listFS();
 };
 
 /**
  * Load the app
  */
-echoapp.EchoApp.prototype.load = function() {
+feastapp.FeastApp.prototype.load = function() {
   var self = this;
   $(document).ready(function() {
     // event handlers
-    $("#send").click(self.send.bind(self));
-    $("#msg").keyup(function (e) {
-      if (e.keyCode == 13) self.send(); // enter key
-      return false;
-    });
-
-    $("#msg").focus();
+    $("#send1").click(self.send1.bind(self));
+    $("#send2").click(self.send2.bind(self));
+    $("#send3").click(self.send3.bind(self));
+    $("#send4").click(self.send4.bind(self));
   });
 };
 
-module.exports = echoapp;
+/**
+ * @param {feastapp.FeastApp} self
+ */
+function changeTags(self) {
+  var tagInputs = document.getElementsByTagName('input');
+  var tagKey = tagInputs.namedItem("tagKey");
+  var tagValue = tagInputs.namedItem("tagValue");
+  self.tags = null
+  if (tagKey.value || tagValue.value) {
+    var result = new Map();
+    result.set(tagKey.value, tagValue.value);
+    self.tags = result;
+  }
+}
+
+module.exports = feastapp;
